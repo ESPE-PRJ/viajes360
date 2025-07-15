@@ -1,31 +1,45 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
+import axios from "axios";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Loader2, CheckCircle, XCircle, Plane, Building, CreditCard } from "lucide-react"
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  Loader2,
+  CheckCircle,
+  XCircle,
+  Plane,
+  Building,
+  CreditCard,
+} from "lucide-react";
 
 interface ReservaData {
-  cliente: string
-  vuelo_destino: string
-  hotel_nombre: string
-  monto_total: number
+  cliente: string;
+  vuelo_destino: string;
+  hotel_nombre: string;
+  monto_total: number;
 }
 
 interface ReservaResponse {
-  success: boolean
-  message: string
-  reserva_id?: string
+  success: boolean;
+  message: string;
+  reserva_id?: string;
   detalles?: {
-    vuelo_confirmado: boolean
-    hotel_confirmado: boolean
-    pago_procesado: boolean
-  }
+    vuelo_confirmado: boolean;
+    hotel_confirmado: boolean;
+    pago_procesado: boolean;
+  };
 }
 
 export default function ReservaForm() {
@@ -34,82 +48,83 @@ export default function ReservaForm() {
     vuelo_destino: "",
     hotel_nombre: "",
     monto_total: 0,
-  })
+  });
 
-  const [loading, setLoading] = useState(false)
-  const [response, setResponse] = useState<ReservaResponse | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false);
+  const [response, setResponse] = useState<ReservaResponse | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleInputChange = (field: keyof ReservaData, value: string | number) => {
+  const handleInputChange = (
+    field: keyof ReservaData,
+    value: string | number
+  ) => {
     setFormData((prev) => ({
       ...prev,
       [field]: value,
-    }))
-  }
+    }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setResponse(null)
-    setError(null)
+    e.preventDefault();
+    setLoading(true);
+    setResponse(null);
+    setError(null);
 
     try {
-      // Simular llamada al endpoint de MuleSoft
-      // En producción, reemplazar con la URL real del orquestador
-      const endpoint = "http://localhost:8081/api/reservas"
-
-      const response = await fetch(endpoint, {
-        method: "POST",
+      // Llamada usando el proxy de Next.js (evita CORS)
+      const response = await axios.post("/api/reservas", formData, {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(formData),
-      })
+      });
 
-      if (response.ok) {
-        const data = await response.json()
-        setResponse({
-          success: true,
-          message: "Reserva procesada exitosamente",
-          reserva_id: `RES-${Date.now()}`,
-          detalles: {
-            vuelo_confirmado: true,
-            hotel_confirmado: true,
-            pago_procesado: true,
-          },
-        })
-      } else {
-        // Manejar error 500 (compensación activada)
-        const errorData = await response.json()
-        setResponse({
-          success: false,
-          message: errorData.message || "Error en el procesamiento. Transacción revertida.",
-        })
-      }
+      // Axios arroja automáticamente errores para status >= 400
+      setResponse({
+        success: true,
+        message: response.data.message || "Reserva procesada exitosamente",
+        reserva_id: response.data.reserva_id || `RES-${Date.now()}`,
+        detalles: response.data.detalles || {
+          vuelo_confirmado: true,
+          hotel_confirmado: true,
+          pago_procesado: true,
+        },
+      });
     } catch (err) {
-      // Simular respuestas para demostración
-      if (formData.monto_total > 1000) {
+      // Manejar errores de axios
+      if (axios.isAxiosError(err) && err.response) {
+        // Error de respuesta del servidor
+        const errorData = err.response.data;
         setResponse({
           success: false,
           message:
-            "Error en el procesamiento del pago. Las reservas de vuelo y hotel han sido canceladas automáticamente.",
-        })
+            errorData.message ||
+            "Error en el procesamiento. Transacción revertida.",
+        });
       } else {
-        setResponse({
-          success: true,
-          message: "Reserva procesada exitosamente",
-          reserva_id: `RES-${Date.now()}`,
-          detalles: {
-            vuelo_confirmado: true,
-            hotel_confirmado: true,
-            pago_procesado: true,
-          },
-        })
+        // Error de red o simulación para demostración
+        if (formData.monto_total > 1000) {
+          setResponse({
+            success: false,
+            message:
+              "Error en el procesamiento del pago. Las reservas de vuelo y hotel han sido canceladas automáticamente.",
+          });
+        } else {
+          setResponse({
+            success: true,
+            message: "Reserva procesada exitosamente",
+            reserva_id: `RES-${Date.now()}`,
+            detalles: {
+              vuelo_confirmado: true,
+              hotel_confirmado: true,
+              pago_procesado: true,
+            },
+          });
+        }
       }
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const resetForm = () => {
     setFormData({
@@ -117,10 +132,10 @@ export default function ReservaForm() {
       vuelo_destino: "",
       hotel_nombre: "",
       monto_total: 0,
-    })
-    setResponse(null)
-    setError(null)
-  }
+    });
+    setResponse(null);
+    setError(null);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
@@ -136,7 +151,9 @@ export default function ReservaForm() {
               <Plane className="h-5 w-5" />
               Nueva Reserva de Viaje
             </CardTitle>
-            <CardDescription>Complete los datos para procesar su reserva de vuelo y hotel</CardDescription>
+            <CardDescription>
+              Complete los datos para procesar su reserva de vuelo y hotel
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -148,7 +165,9 @@ export default function ReservaForm() {
                     type="text"
                     placeholder="Ej: Ana Torres"
                     value={formData.cliente}
-                    onChange={(e) => handleInputChange("cliente", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("cliente", e.target.value)
+                    }
                     required
                   />
                 </div>
@@ -160,7 +179,9 @@ export default function ReservaForm() {
                     type="text"
                     placeholder="Ej: Madrid"
                     value={formData.vuelo_destino}
-                    onChange={(e) => handleInputChange("vuelo_destino", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("vuelo_destino", e.target.value)
+                    }
                     required
                   />
                 </div>
@@ -172,7 +193,9 @@ export default function ReservaForm() {
                     type="text"
                     placeholder="Ej: Hotel Central"
                     value={formData.hotel_nombre}
-                    onChange={(e) => handleInputChange("hotel_nombre", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("hotel_nombre", e.target.value)
+                    }
                     required
                   />
                 </div>
@@ -186,12 +209,18 @@ export default function ReservaForm() {
                     min="0"
                     placeholder="850.00"
                     value={formData.monto_total || ""}
-                    onChange={(e) => handleInputChange("monto_total", Number.parseFloat(e.target.value) || 0)}
+                    onChange={(e) =>
+                      handleInputChange(
+                        "monto_total",
+                        Number.parseFloat(e.target.value) || 0
+                      )
+                    }
                     required
                   />
                   {formData.monto_total > 1000 && (
                     <p className="text-sm text-amber-600 mt-1">
-                      ⚠️ Montos superiores a $1000 activarán la simulación de error
+                      ⚠️ Montos superiores a $1000 activarán la simulación de
+                      error
                     </p>
                   )}
                 </div>
@@ -209,7 +238,12 @@ export default function ReservaForm() {
                   )}
                 </Button>
 
-                <Button type="button" variant="outline" onClick={resetForm} disabled={loading}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={resetForm}
+                  disabled={loading}
+                >
                   Limpiar
                 </Button>
               </div>
@@ -231,8 +265,18 @@ export default function ReservaForm() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <Alert className={response.success ? "border-green-200 bg-green-50" : "border-red-200 bg-red-50"}>
-                <AlertDescription className={response.success ? "text-green-800" : "text-red-800"}>
+              <Alert
+                className={
+                  response.success
+                    ? "border-green-200 bg-green-50"
+                    : "border-red-200 bg-red-50"
+                }
+              >
+                <AlertDescription
+                  className={
+                    response.success ? "text-green-800" : "text-red-800"
+                  }
+                >
                   {response.message}
                 </AlertDescription>
               </Alert>
@@ -240,27 +284,56 @@ export default function ReservaForm() {
               {response.success && response.reserva_id && (
                 <div className="mt-4 space-y-3">
                   <div className="p-3 bg-gray-50 rounded-lg">
-                    <p className="font-semibold">ID de Reserva: {response.reserva_id}</p>
+                    <p className="font-semibold">
+                      ID de Reserva: {response.reserva_id}
+                    </p>
                   </div>
 
                   {response.detalles && (
                     <div className="grid gap-2">
                       <div className="flex items-center gap-2 text-sm">
                         <Plane className="h-4 w-4 text-blue-600" />
-                        <span className={response.detalles.vuelo_confirmado ? "text-green-600" : "text-red-600"}>
-                          Vuelo: {response.detalles.vuelo_confirmado ? "Confirmado" : "Cancelado"}
+                        <span
+                          className={
+                            response.detalles.vuelo_confirmado
+                              ? "text-green-600"
+                              : "text-red-600"
+                          }
+                        >
+                          Vuelo:{" "}
+                          {response.detalles.vuelo_confirmado
+                            ? "Confirmado"
+                            : "Cancelado"}
                         </span>
                       </div>
                       <div className="flex items-center gap-2 text-sm">
                         <Building className="h-4 w-4 text-purple-600" />
-                        <span className={response.detalles.hotel_confirmado ? "text-green-600" : "text-red-600"}>
-                          Hotel: {response.detalles.hotel_confirmado ? "Confirmado" : "Cancelado"}
+                        <span
+                          className={
+                            response.detalles.hotel_confirmado
+                              ? "text-green-600"
+                              : "text-red-600"
+                          }
+                        >
+                          Hotel:{" "}
+                          {response.detalles.hotel_confirmado
+                            ? "Confirmado"
+                            : "Cancelado"}
                         </span>
                       </div>
                       <div className="flex items-center gap-2 text-sm">
                         <CreditCard className="h-4 w-4 text-green-600" />
-                        <span className={response.detalles.pago_procesado ? "text-green-600" : "text-red-600"}>
-                          Pago: {response.detalles.pago_procesado ? "Procesado" : "Fallido"}
+                        <span
+                          className={
+                            response.detalles.pago_procesado
+                              ? "text-green-600"
+                              : "text-red-600"
+                          }
+                        >
+                          Pago:{" "}
+                          {response.detalles.pago_procesado
+                            ? "Procesado"
+                            : "Fallido"}
                         </span>
                       </div>
                     </div>
@@ -270,7 +343,9 @@ export default function ReservaForm() {
 
               {!response.success && (
                 <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                  <h4 className="font-semibold text-red-800 mb-2">Compensación Activada</h4>
+                  <h4 className="font-semibold text-red-800 mb-2">
+                    Compensación Activada
+                  </h4>
                   <ul className="text-sm text-red-700 space-y-1">
                     <li>• Reserva de vuelo cancelada automáticamente</li>
                     <li>• Reserva de hotel cancelada automáticamente</li>
@@ -295,14 +370,16 @@ export default function ReservaForm() {
               <strong>Orquestación:</strong> Vuelo → Hotel → Pago
             </p>
             <p>
-              <strong>Compensación:</strong> Si el pago falla, se cancelan vuelo y hotel automáticamente
+              <strong>Compensación:</strong> Si el pago falla, se cancelan vuelo
+              y hotel automáticamente
             </p>
             <p>
-              <strong>Simulación de Error:</strong> Montos {">"} $1000 fallarán en el procesamiento de pago
+              <strong>Simulación de Error:</strong> Montos {">"} $1000 fallarán
+              en el procesamiento de pago
             </p>
           </CardContent>
         </Card>
       </div>
     </div>
-  )
+  );
 }

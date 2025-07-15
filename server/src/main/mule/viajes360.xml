@@ -9,27 +9,35 @@
         http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
         http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
 
-    <!-- Configuración del Listener HTTP -->
+    <!-- Configuración del Listener HTTP con CORS -->
     <http:listener-config name="HTTP_Config" doc:name="HTTP Listener Config">
-        <http:listener-connection host="0.0.0.0" port="8081"/>
-    
-</http:listener-config>
+        <http:listener-connection host="localhost" port="8081"/>
+        <http:listener-interceptors>
+            <http:cors-interceptor>
+                <http:origins>
+                    <http:origin url="http://localhost:3000" accessControlMaxAge="30"/>
+                    <http:origin url="*" accessControlMaxAge="30"/>
+                </http:origins>
+            </http:cors-interceptor>
+        </http:listener-interceptors>
+    </http:listener-config>
 
     <!-- Flujo principal -->
     <flow name="api-reservas-flow">
-        <http:listener doc:name="POST /reservar" config-ref="HTTP_Config" path="/reservar"/>
+        <http:listener doc:name="POST /reservar" config-ref="HTTP_Config" path="/reservar" allowedMethods="POST,OPTIONS"/>
 
-        <!-- Transformar el JSON de entrada -->
-        <ee:transform doc:name="Transform JSON">
+        <!-- Parsear y transformar el JSON de entrada -->
+        <ee:transform doc:name="Parse and Transform JSON">
             <ee:message>
                 <ee:set-payload><![CDATA[%dw 2.0
 output application/json
+var parsedPayload = payload as Object
 ---
 {
-  cliente: payload.cliente,
-  vuelo_destino: payload.vuelo_destino,
-  hotel_nombre: payload.hotel_nombre,
-  monto_total: payload.monto_total
+  cliente: parsedPayload.cliente,
+  vuelo_destino: parsedPayload.vuelo_destino,
+  hotel_nombre: parsedPayload.hotel_nombre,
+  monto_total: parsedPayload.monto_total
 }]]></ee:set-payload>
             </ee:message>
         </ee:transform>
