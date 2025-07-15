@@ -12,16 +12,8 @@
     <!-- Configuración del Listener HTTP -->
     <http:listener-config name="HTTP_Config" doc:name="HTTP Listener Config">
         <http:listener-connection host="0.0.0.0" port="8081"/>
-        <http:listener-interceptors >
-            <http:cors-interceptor >
-                <http:origins >
-                    <http:public-resource ></http:public-resource>
-					<http:origin url="http://localhost:3000" accessControlMaxAge="30000" />
-                
-</http:origins>
-            </http:cors-interceptor>
-        </http:listener-interceptors>
-    </http:listener-config>
+    
+</http:listener-config>
 
     <!-- Flujo principal -->
     <flow name="api-reservas-flow">
